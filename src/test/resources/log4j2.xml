@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+	<Appenders>
+		<Console name="STDOUT" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss,SSS} %5p [%-20c{1}] %m%n" />
+		</Console>
+	</Appenders>
+	<Loggers>
+		<Logger name="org.apache.log4j.xml" level="warn" />
+		<Logger name="org.hibernate" level="warn" />
+		<Logger name="org.jboss.weld" level="warn" />
+		<Logger name="org.weld" level="warn" />
+		<Logger name="eti.br.clairton" level="warn" />
+		<Logger name="br.com.caelum" level="warn" />
+		<Logger name="org.batoo" level="warn" />
+		<Root level="warn">
+			<AppenderRef ref="STDOUT" />
+		</Root>
+		<Root level="debug">
+			<AppenderRef ref="STDOUT" />
+		</Root>
+	</Loggers>
+</Configuration>
