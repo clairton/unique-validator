@@ -28,10 +28,25 @@ public @interface Unique {
 	Class<?>[] groups() default {};
 
 	Class<? extends Payload>[] payload() default {};
-	
+
+	/**
+	 * Qualifier to lookup entity in CDI.
+	 * 
+	 * @return type
+	 */
 	Class<? extends Annotation> qualifier() default Default.class;
 
+	/**
+	 * Class of entity where de field is validate.
+	 * 
+	 * @return type
+	 */
 	Class<?> type();
-	
+
+	/**
+	 * Path of field to validate.
+	 * 
+	 * @return String
+	 */
 	String path();
 }
