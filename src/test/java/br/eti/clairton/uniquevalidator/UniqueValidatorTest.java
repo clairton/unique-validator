@@ -22,6 +22,7 @@ public class UniqueValidatorTest {
 	private final String protocol = "lkasdjfkwej" + new Date().getTime();
 	private @Inject Validator validator;
 	private @Inject EntityManager manager;
+	private Model model;
 
 	@Before
 	public void init() throws Exception {
@@ -31,7 +32,7 @@ public class UniqueValidatorTest {
 		final Connection connection = manager.unwrap(Connection.class);
 		final String sql = "DELETE FROM model;";
 		connection.createStatement().execute(sql);
-		final Model model = new Model(protocol);
+		model = new Model(protocol);
 		manager.persist(model);
 		manager.flush();
 		manager.clear();
@@ -47,6 +48,11 @@ public class UniqueValidatorTest {
 	@Test
 	public void testIsValid() {
 		final Model model = new Model(protocol + new Date().getTime());
+		assertTrue(validator.validateProperty(model, "protocol").isEmpty());
+	}
+
+	@Test
+	public void testIsValidWhenUpdate() {
 		assertTrue(validator.validateProperty(model, "protocol").isEmpty());
 	}
 }
