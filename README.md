@@ -4,12 +4,10 @@ Bean Validation for unique value in database;
 
 ```java
 @Entity
+@Unique(path = "protocol", type = Model.class, qualifier = Default.class)
 public class Model {
 	....
-
-	@Unique(path = "protocol", type = Model.class, qualifier = Default.class)
 	private String protocol;
-
 	...
 }
 ```
