@@ -1,6 +1,6 @@
 package br.eti.clairton.uniquevalidator;
 
-import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Annotation;
@@ -17,7 +17,7 @@ import javax.validation.Payload;
  * 
  * @author Clairton Rodrigo Heinzen<clairton.rodrigo@gmail.com>
  */
-@Target(FIELD)
+@Target(TYPE)
 @Retention(RUNTIME)
 @Documented
 @Constraint(validatedBy = { UniqueValidator.class })

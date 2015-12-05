@@ -42,17 +42,33 @@ public class UniqueValidatorTest {
 	@Test
 	public void testIsInValid() {
 		final Model model = new Model(protocol);
-		assertFalse(validator.validateProperty(model, "protocol").isEmpty());
+		assertFalse(validator.validate(model).isEmpty());
 	}
 
 	@Test
 	public void testIsValid() {
 		final Model model = new Model(protocol + new Date().getTime());
-		assertTrue(validator.validateProperty(model, "protocol").isEmpty());
+		assertTrue(validator.validate(model).isEmpty());
+	}
+	
+	@Test
+	public void testIsInValidWhenUpdate() throws Exception{
+		final InitialContext context = new InitialContext();
+		final TransactionManager tm = (TransactionManager) context.lookup("java:/jboss/TransactionManager");
+		tm.begin();
+		manager.joinTransaction();
+		final Model model = new Model(protocol + "1466576");
+		manager.persist(model);
+		manager.flush();
+		manager.clear();
+		tm.commit();
+		assertTrue(validator.validate(model).isEmpty());
+		model.setProtocol(protocol);
+		assertFalse(validator.validate(model).isEmpty());
 	}
 
 	@Test
 	public void testIsValidWhenUpdate() {
-		assertTrue(validator.validateProperty(model, "protocol").isEmpty());
+		assertTrue(validator.validate(model).isEmpty());
 	}
 }

@@ -3,6 +3,8 @@ package br.eti.clairton.uniquevalidator;
 import static javax.enterprise.inject.spi.CDI.current;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.Set;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.util.AnnotationLiteral;
@@ -13,6 +15,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
@@ -45,7 +49,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	 * {@inheritDoc}.
 	 */
 	@Override
-	public boolean isValid(final Object value, final ConstraintValidatorContext context) {
+	public boolean isValid(final Object record, final ConstraintValidatorContext context) {
 		final Class<EntityManager> t = EntityManager.class;
 		final Instance<EntityManager> select = current().select(t, qualifier);
 		final EntityManager em = select.get();
@@ -53,9 +57,52 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 		final CriteriaQuery<Long> cq = cb.createQuery(Long.class);
 		final Root<?> root = cq.from(type);
 		final Path<?> field = root.get(path);
+		final Object value;
+
+		try{
+			final Field f = record.getClass().getDeclaredField(path);
+			f.setAccessible(true);
+			value = f.get(record);
+		}catch(final Exception e){
+			throw new RuntimeException(e);
+		}
+		
 		final Predicate equal = cb.equal(field, value);
 		cq.select(cb.count(root));
-		cq.where(equal);
+		
+		final EntityType<?> entity = em.getMetamodel().entity(type);
+		SingularAttribute<?, ?> attribute = null;
+		final Set<?> attributes = entity.getSingularAttributes();
+        for (final Object object : attributes) {
+        	attribute = (SingularAttribute<?, ?>) object;
+            if (attribute.isId()){    
+                break;
+            }
+        }
+
+        if(attribute != null){
+        	final String name = attribute.getName();
+        	final Object id;
+	        try{	
+	        	final Field f = record.getClass().getDeclaredField(name);
+	        	f.setAccessible(true);
+	        	id = f.get(record);
+			}catch(final Exception e){
+				throw new RuntimeException(e);
+			}
+	        if(id != null){
+	        	final Path<?> field2 = root.get(name);
+	        	final Predicate notEqual = cb.notEqual(field2, id);	        	
+	        	cq.where(cb.and(equal, notEqual));
+	        }else{
+	        	cq.where(equal);
+	        }
+	        
+        }else{
+        	cq.where(equal);        	
+        }       
+        
+		
 		final TypedQuery<Long> query = em.createQuery(cq);
 		query.setHint("eclipselink.read-only", true);
 		query.setHint("org.hibernate.readOnly", true);
