@@ -4,7 +4,11 @@ Bean Validation for unique value in database;
 
 ```java
 @Entity
-@Unique(path = "protocol", type = Model.class, qualifier = Default.class)
+@Unique(path = "protocol", type = Model.class, qualifier = Default.class, hints = {
+	//to not use cache
+	@Hint(key = "eclipselink.read-only", value="true"),//eclipse-link
+	@Hint(key = "org.hibernate.readOnly", value="true")//hibernate
+})
 public class Model {
 	....
 	private String protocol;

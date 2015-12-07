@@ -24,6 +24,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	private Annotation qualifier;
 	private Class<?> type;
 	private String path;
+	private Hint[] hints;
 	
 
 	/**
@@ -43,6 +44,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 		};
 		type = annotation.type();
 		path = annotation.path();
+		hints = annotation.hints();
 	}
 
 	/**
@@ -59,10 +61,30 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 		final Path<?> field = root.get(path);
 		final Object value = getValue(record, record.getClass(), path);
 		
-		final Predicate equal = cb.equal(field, value);
 		cq.select(cb.count(root));
+		final Predicate equal = cb.equal(field, value);
+
+    	final String name = getIdField(em, record.getClass());
+    	final Object id = getValue(record, record.getClass(), name);
+        if(id != null){
+        	final Path<?> fieldId = root.get(name);
+        	final Predicate notEqual = cb.notEqual(fieldId, id);	        	
+        	cq.where(cb.and(equal, notEqual));
+        }else{
+        	cq.where(equal);
+        }	    
 		
-		final EntityType<?> entity = em.getMetamodel().entity(type);
+		final TypedQuery<Long> query = em.createQuery(cq);
+		for (final Hint hint : hints) {
+			query.setHint(hint.key(), hint.value());			
+		}
+		
+		final long count = query.getSingleResult();
+		return count == 0l;
+	}
+
+	protected String getIdField(final EntityManager manager, final Class<?> type){
+		final EntityType<?> entity = manager.getMetamodel().entity(type);
 		SingularAttribute<?, ?> attribute = null;
 		final Set<?> attributes = entity.getSingularAttributes();
         for (final Object object : attributes) {
@@ -73,26 +95,12 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
         }
 
         if(attribute != null){
-        	final String name = attribute.getName();
-        	final Object id = getValue(record, record.getClass(), name);
-	        if(id != null){
-	        	final Path<?> field2 = root.get(name);
-	        	final Predicate notEqual = cb.notEqual(field2, id);	        	
-	        	cq.where(cb.and(equal, notEqual));
-	        }else{
-	        	cq.where(equal);
-	        }
-	        
+        	return attribute.getName();
         }else{
-        	cq.where(equal);        	
-        }        
-		
-		final TypedQuery<Long> query = em.createQuery(cq);
-		query.setHint("eclipselink.read-only", true);
-		query.setHint("org.hibernate.readOnly", true);
-		final long count = query.getSingleResult();
-		return count == 0l;
+        	throw new RuntimeException("Is not possible find id attribute in " + type);
+        }
 	}
+	
 
 	protected Object getValue(final Object object, final Class<?> type, final String attribute) {
         try{	

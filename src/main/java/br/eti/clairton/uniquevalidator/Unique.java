@@ -49,4 +49,9 @@ public @interface Unique {
 	 * @return String
 	 */
 	String path();
+
+	/**
+	 * Hints to apply.
+	 */
+	Hint[] hints() default {};
 }

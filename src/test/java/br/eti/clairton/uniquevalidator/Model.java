@@ -6,7 +6,9 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
-@Unique(path = "protocol", type = Model.class)
+@Unique(path = "protocol", type = Model.class, hints = {
+	@Hint(key = "eclipselink.read-only", value="true")
+})
 public class Model extends SuperModel{
 
 	@Id
