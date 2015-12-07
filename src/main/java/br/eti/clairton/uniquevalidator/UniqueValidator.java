@@ -57,15 +57,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 		final CriteriaQuery<Long> cq = cb.createQuery(Long.class);
 		final Root<?> root = cq.from(type);
 		final Path<?> field = root.get(path);
-		final Object value;
-
-		try{
-			final Field f = record.getClass().getDeclaredField(path);
-			f.setAccessible(true);
-			value = f.get(record);
-		}catch(final Exception e){
-			throw new RuntimeException(e);
-		}
+		final Object value = getValue(record, record.getClass(), path);
 		
 		final Predicate equal = cb.equal(field, value);
 		cq.select(cb.count(root));
@@ -82,14 +74,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 
         if(attribute != null){
         	final String name = attribute.getName();
-        	final Object id;
-	        try{	
-	        	final Field f = record.getClass().getDeclaredField(name);
-	        	f.setAccessible(true);
-	        	id = f.get(record);
-			}catch(final Exception e){
-				throw new RuntimeException(e);
-			}
+        	final Object id = getValue(record, record.getClass(), name);
 	        if(id != null){
 	        	final Path<?> field2 = root.get(name);
 	        	final Predicate notEqual = cb.notEqual(field2, id);	        	
@@ -100,13 +85,33 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	        
         }else{
         	cq.where(equal);        	
-        }       
-        
+        }        
 		
 		final TypedQuery<Long> query = em.createQuery(cq);
 		query.setHint("eclipselink.read-only", true);
 		query.setHint("org.hibernate.readOnly", true);
 		final long count = query.getSingleResult();
 		return count == 0l;
+	}
+
+	protected Object getValue(final Object object, final Class<?> type, final String attribute) {
+        try{	
+        	return getField(type, attribute).get(object);
+		}catch(final Exception e){
+			throw new RuntimeException(e);
+		}
+	}
+	
+	protected Field getField(final Class<?> type, final String attribute) throws NoSuchFieldException {
+	    while (type != null && type != Object.class) {
+	    	try{
+	        	final Field field = type.getDeclaredField(attribute);
+	        	field.setAccessible(true);
+	        	return field;
+	    	}catch(final NoSuchFieldException e){
+	    		return getField(type.getSuperclass(), attribute);
+	    	}
+	    }
+	    throw new NoSuchFieldException();
 	}
 }

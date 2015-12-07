@@ -7,13 +7,11 @@ import javax.persistence.Id;
 
 @Entity
 @Unique(path = "protocol", type = Model.class)
-public class Model {
+public class Model extends SuperModel{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-
-	private String protocol;
 
 	@Deprecated
 	public Model() {
@@ -21,15 +19,6 @@ public class Model {
 	}
 	
 	public Model(final String protocol) {
-		super();
-		this.protocol = protocol;
-	}
-
-	public String getProtocol() {
-		return protocol;
-	}
-	
-	public void setProtocol(String protocol) {
-		this.protocol = protocol;
+		super(protocol);
 	}
 }
