@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.persistence.EntityManager;
+import javax.persistence.FlushModeType;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -75,12 +76,23 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
         }	    
 		
 		final TypedQuery<Long> query = em.createQuery(cq);
+		final FlushModeType flushMode = query.getFlushMode();
+		query.setFlushMode(FlushModeType.COMMIT);
 		for (final Hint hint : hints) {
 			query.setHint(hint.key(), hint.value());			
 		}
 		
 		final long count = query.getSingleResult();
-		return count == 0l;
+		query.setFlushMode(flushMode);
+		final Boolean isValid = count == 0l;
+
+		if(!isValid){
+            context.disableDefaultConstraintViolation();
+			context.buildConstraintViolationWithTemplate("{br.eti.clairton.uniquevalidator.Unique.message}")
+				.addPropertyNode(path)
+				.addConstraintViolation();				
+		}
+		return isValid;
 	}
 
 	protected String getIdField(final EntityManager manager, final Class<?> type){
