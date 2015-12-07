@@ -1,15 +1,18 @@
 package br.eti.clairton.uniquevalidator;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
 import java.util.Date;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.naming.InitialContext;
 import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
+import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
@@ -42,7 +45,11 @@ public class UniqueValidatorTest {
 	@Test
 	public void testIsInValid() {
 		final Model model = new Model(protocol);
-		assertFalse(validator.validate(model).isEmpty());
+		final Set<ConstraintViolation<Model>> violations = validator.validate(model);
+		assertFalse(violations.isEmpty());
+		final ConstraintViolation<Model> violation = violations.iterator().next();
+		assertEquals("The value already exists in Data Base.", violation.getMessage());
+		assertEquals("protocol", violation.getPropertyPath().toString());
 	}
 
 	@Test
