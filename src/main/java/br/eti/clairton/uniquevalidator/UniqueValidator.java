@@ -27,6 +27,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	private Class<?> type;
 	private String[] paths;
 	private Hint[] hints;
+	private Reader reader = new Reader();
 	
 
 	/**
@@ -68,88 +69,100 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	}
 	
 	protected boolean isValid(final Object record) {
-		final Long count = count(record);
+		final Long count = reader.count(record, type, paths, hints, qualifier);
 		final Boolean isValid = count == 0l;
 		return isValid;
 	}
-
-	protected Long count(final Object record) {
-		final Class<EntityManager> t = EntityManager.class;
-		final Instance<EntityManager> select = current().select(t, qualifier);
-		final EntityManager em = select.get();
-		final CriteriaBuilder cb = em.getCriteriaBuilder();
-		final CriteriaQuery<Long> cq = cb.createQuery(Long.class);
-		final Root<?> root = cq.from(type);
-		
-		Predicate predicate;
-		
-		final String name = getIdField(em, record.getClass());
-    	final Object id = getValue(record, record.getClass(), name);
-        if(id != null){
-        	final Path<?> fieldId = root.get(name);
-        	predicate = cb.notEqual(fieldId, id);	        	
-        } else {
-        	predicate = cb.equal(cb.literal(1), cb.literal(1));
-        }
-		
-		for (final String path : paths) {
-			final Path<?> field = root.get(path);
-			final Object value = getValue(record, record.getClass(), path);
-			final Predicate equal = cb.equal(field, value);
-			predicate = cb.and(predicate, equal);
-		}		
-		
-		cq.select(cb.count(root)).where(predicate); 
-		
-		final TypedQuery<Long> query = em.createQuery(cq);
-		final FlushModeType flushMode = query.getFlushMode();
-		query.setFlushMode(COMMIT);
-		for (final Hint hint : hints) {
-			query.setHint(hint.key(), hint.value());			
-		}
-		
-		final Long count = query.getSingleResult();
-		query.setFlushMode(flushMode);
-		return count;
-	}
-
-	protected String getIdField(final EntityManager manager, final Class<?> type){
-		final EntityType<?> entity = manager.getMetamodel().entity(type);
-		SingularAttribute<?, ?> attribute = null;
-		final Set<?> attributes = entity.getSingularAttributes();
-        for (final Object object : attributes) {
-        	attribute = (SingularAttribute<?, ?>) object;
-            if (attribute.isId()){    
-                break;
-            }
-        }
-
-        if(attribute != null){
-        	return attribute.getName();
-        }else{
-        	throw new RuntimeException("Is not possible find id attribute in " + type);
-        }
+	
+	public void mockCountToReturn(final Long count){
+		reader = new Reader(){
+			@Override
+			protected Long count(final Object record, final Class<?> type, final String[] paths, final Hint[] hints, final Annotation qualifier) {
+				return count;
+			}
+		};
 	}
 	
+	private static class Reader{
 
-	protected Object getValue(final Object object, final Class<?> type, final String attribute) {
-        try{	
-        	return getField(type, attribute).get(object);
-		}catch(final Exception e){
-			throw new RuntimeException(e);
+		protected Long count(final Object record, final Class<?> type, final String[] paths, final Hint[] hints, final Annotation qualifier) {
+			final Class<EntityManager> t = EntityManager.class;
+			final Instance<EntityManager> select = current().select(t, qualifier);
+			final EntityManager em = select.get();
+			final CriteriaBuilder cb = em.getCriteriaBuilder();
+			final CriteriaQuery<Long> cq = cb.createQuery(Long.class);
+			final Root<?> root = cq.from(type);
+			
+			Predicate predicate;
+			
+			final String name = getIdField(em, record.getClass());
+	    	final Object id = getValue(record, record.getClass(), name);
+	        if(id != null){
+	        	final Path<?> fieldId = root.get(name);
+	        	predicate = cb.notEqual(fieldId, id);	        	
+	        } else {
+	        	predicate = cb.equal(cb.literal(1), cb.literal(1));
+	        }
+			
+			for (final String path : paths) {
+				final Path<?> field = root.get(path);
+				final Object value = getValue(record, record.getClass(), path);
+				final Predicate equal = cb.equal(field, value);
+				predicate = cb.and(predicate, equal);
+			}		
+			
+			cq.select(cb.count(root)).where(predicate); 
+			
+			final TypedQuery<Long> query = em.createQuery(cq);
+			final FlushModeType flushMode = query.getFlushMode();
+			query.setFlushMode(COMMIT);
+			for (final Hint hint : hints) {
+				query.setHint(hint.key(), hint.value());			
+			}
+			
+			final Long count = query.getSingleResult();
+			query.setFlushMode(flushMode);
+			return count;
+		}	
+
+		private String getIdField(final EntityManager manager, final Class<?> type){
+			final EntityType<?> entity = manager.getMetamodel().entity(type);
+			SingularAttribute<?, ?> attribute = null;
+			final Set<?> attributes = entity.getSingularAttributes();
+	        for (final Object object : attributes) {
+	        	attribute = (SingularAttribute<?, ?>) object;
+	            if (attribute.isId()){    
+	                break;
+	            }
+	        }
+
+	        if(attribute != null){
+	        	return attribute.getName();
+	        }else{
+	        	throw new RuntimeException("Is not possible find id attribute in " + type);
+	        }
 		}
-	}
-	
-	protected Field getField(final Class<?> type, final String attribute) throws NoSuchFieldException {
-	    while (type != null && type != Object.class) {
-	    	try{
-	        	final Field field = type.getDeclaredField(attribute);
-	        	field.setAccessible(true);
-	        	return field;
-	    	}catch(final NoSuchFieldException e){
-	    		return getField(type.getSuperclass(), attribute);
-	    	}
-	    }
-	    throw new NoSuchFieldException();
+		
+
+		private Object getValue(final Object object, final Class<?> type, final String attribute) {
+	        try{	
+	        	return getField(type, attribute).get(object);
+			}catch(final Exception e){
+				throw new RuntimeException(e);
+			}
+		}
+		
+		private Field getField(final Class<?> type, final String attribute) throws NoSuchFieldException {
+		    while (type != null && type != Object.class) {
+		    	try{
+		        	final Field field = type.getDeclaredField(attribute);
+		        	field.setAccessible(true);
+		        	return field;
+		    	}catch(final NoSuchFieldException e){
+		    		return getField(type.getSuperclass(), attribute);
+		    	}
+		    }
+		    throw new NoSuchFieldException();
+		}	
 	}
 }

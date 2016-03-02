@@ -22,9 +22,8 @@ public class UniqueValidatorTest {
 		when(context.buildConstraintViolationWithTemplate(anyString())).thenReturn(builder);
 		when(builder.addPropertyNode(anyString())).thenReturn(node);
 		final ConstraintValidator<Unique, Object> validator = new UniqueValidator(){
-			@Override
-			protected Long count(final Object record) {
-				return 2l;
+			{
+				mockCountToReturn(2l);
 			}
 		};
 		final Unique annotation = Model2.class.getAnnotation(Unique.class);

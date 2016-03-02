@@ -20,10 +20,10 @@ For unit test:
 ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
 ....
 Unique annotation = ....;
-ConstraintValidator<Unique, Object> validator = new UniqueValidator(){
-	@Override
-	protected Long count(final Object record) {
-		return 2l;
+final ConstraintValidator<Unique, Object> validator = new UniqueValidator(){
+	{
+		//mock count records
+		mockCountToReturn(2l);
 	}
 };
 validator.init(annotation);
