@@ -54,6 +54,26 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	 */
 	@Override
 	public boolean isValid(final Object record, final ConstraintValidatorContext context) {
+		final Boolean isValid = isValid(record);
+		if(!isValid){
+            context.disableDefaultConstraintViolation();
+            final String key = "{br.eti.clairton.uniquevalidator.Unique.message}";
+			for (final String path : paths) {				
+				context.buildConstraintViolationWithTemplate(key)
+					.addPropertyNode(path)
+					.addConstraintViolation();				
+			}
+		}
+		return isValid;
+	}
+	
+	protected boolean isValid(final Object record) {
+		final Long count = count(record);
+		final Boolean isValid = count == 0l;
+		return isValid;
+	}
+
+	protected Long count(final Object record) {
 		final Class<EntityManager> t = EntityManager.class;
 		final Instance<EntityManager> select = current().select(t, qualifier);
 		final EntityManager em = select.get();
@@ -88,20 +108,9 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 			query.setHint(hint.key(), hint.value());			
 		}
 		
-		final long count = query.getSingleResult();
+		final Long count = query.getSingleResult();
 		query.setFlushMode(flushMode);
-		final Boolean isValid = count == 0l;
-
-		if(!isValid){
-            context.disableDefaultConstraintViolation();
-            final String key = "{br.eti.clairton.uniquevalidator.Unique.message}";
-			for (final String path : paths) {				
-				context.buildConstraintViolationWithTemplate(key)
-					.addPropertyNode(path)
-					.addConstraintViolation();				
-			}
-		}
-		return isValid;
+		return count;
 	}
 
 	protected String getIdField(final EntityManager manager, final Class<?> type){

@@ -4,7 +4,7 @@ Bean Validation for unique value in database;
 
 ```java
 @Entity
-@Unique(path = "protocol", type = Model.class, qualifier = Default.class, hints = {
+@Unique(path = {"protocol"}, type = Model.class, qualifier = Default.class, hints = {
 	//to not use cache
 	@Hint(key = "eclipselink.read-only", value="true"),//eclipse-link
 	@Hint(key = "org.hibernate.readOnly", value="true")//hibernate
@@ -14,6 +14,20 @@ public class Model {
 	private String protocol;
 	...
 }
+```
+For unit test:
+```java
+ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
+....
+Unique annotation = ....;
+ConstraintValidator<Unique, Object> validator = new UniqueValidator(){
+	@Override
+	protected Long count(final Object record) {
+		return 2l;
+	}
+};
+validator.init(annotation);
+assertFalse(validator.isValid(someOject, context));
 ```
 
 Para usar será necessário adicionar os repositórios maven:
