@@ -1,5 +1,6 @@
 package br.eti.clairton.uniquevalidator;
 
+import static br.eti.clairton.uniquevalidator.UniqueValidator.mockCountToReturn;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -21,11 +22,8 @@ public class UniqueValidatorTest {
 		final NodeBuilderCustomizableContext node = mock(NodeBuilderCustomizableContext.class);
 		when(context.buildConstraintViolationWithTemplate(anyString())).thenReturn(builder);
 		when(builder.addPropertyNode(anyString())).thenReturn(node);
-		final ConstraintValidator<Unique, Object> validator = new UniqueValidator(){
-			{
-				mockCountToReturn(2l);
-			}
-		};
+		mockCountToReturn(2l);
+		final ConstraintValidator<Unique, Object> validator = new UniqueValidator();
 		final Unique annotation = Model2.class.getAnnotation(Unique.class);
 		validator.initialize(annotation);
 		assertFalse(validator.isValid("somevalue", context));

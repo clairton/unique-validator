@@ -20,14 +20,11 @@ For unit test:
 ConstraintValidatorContext context = mock(ConstraintValidatorContext.class);
 ....
 Unique annotation = ....;
-final ConstraintValidator<Unique, Object> validator = new UniqueValidator(){
-	{
-		//mock count records
-		mockCountToReturn(2l);
-	}
-};
+UniqueValidator.mockCountToReturn(2l);
+final ConstraintValidator<Unique, Object> validator = new UniqueValidator();
 validator.init(annotation);
 assertFalse(validator.isValid(someOject, context));
+UniqueValidator.mockRollback();
 ```
 
 Para usar será necessário adicionar os repositórios maven:

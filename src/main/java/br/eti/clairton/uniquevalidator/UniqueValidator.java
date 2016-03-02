@@ -27,7 +27,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	private Class<?> type;
 	private String[] paths;
 	private Hint[] hints;
-	private Reader reader = new Reader();
+	private static Reader reader = new Reader();
 	
 
 	/**
@@ -74,13 +74,17 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 		return isValid;
 	}
 	
-	public void mockCountToReturn(final Long count){
+	public static void mockCountToReturn(final Long count){
 		reader = new Reader(){
 			@Override
 			protected Long count(final Object record, final Class<?> type, final String[] paths, final Hint[] hints, final Annotation qualifier) {
 				return count;
 			}
 		};
+	}
+	
+	public static void mockRollback(){
+		reader = new Reader();
 	}
 	
 	private static class Reader{
