@@ -1,6 +1,7 @@
 package br.eti.clairton.uniquevalidator;
 
 import static javax.enterprise.inject.spi.CDI.current;
+import static javax.persistence.FlushModeType.COMMIT;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -24,7 +25,7 @@ import javax.validation.ConstraintValidatorContext;
 public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 	private Annotation qualifier;
 	private Class<?> type;
-	private String path;
+	private String[] paths;
 	private Hint[] hints;
 	
 
@@ -44,7 +45,7 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 			}
 		};
 		type = annotation.type();
-		path = annotation.path();
+		paths = annotation.path();
 		hints = annotation.hints();
 	}
 
@@ -59,25 +60,30 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 		final CriteriaBuilder cb = em.getCriteriaBuilder();
 		final CriteriaQuery<Long> cq = cb.createQuery(Long.class);
 		final Root<?> root = cq.from(type);
-		final Path<?> field = root.get(path);
-		final Object value = getValue(record, record.getClass(), path);
 		
-		cq.select(cb.count(root));
-		final Predicate equal = cb.equal(field, value);
-
-    	final String name = getIdField(em, record.getClass());
+		Predicate predicate;
+		
+		final String name = getIdField(em, record.getClass());
     	final Object id = getValue(record, record.getClass(), name);
         if(id != null){
         	final Path<?> fieldId = root.get(name);
-        	final Predicate notEqual = cb.notEqual(fieldId, id);	        	
-        	cq.where(cb.and(equal, notEqual));
-        }else{
-        	cq.where(equal);
-        }	    
+        	predicate = cb.notEqual(fieldId, id);	        	
+        } else {
+        	predicate = cb.equal(cb.literal(1), cb.literal(1));
+        }
+		
+		for (final String path : paths) {
+			final Path<?> field = root.get(path);
+			final Object value = getValue(record, record.getClass(), path);
+			final Predicate equal = cb.equal(field, value);
+			predicate = cb.and(predicate, equal);
+		}		
+		
+		cq.select(cb.count(root)).where(predicate); 
 		
 		final TypedQuery<Long> query = em.createQuery(cq);
 		final FlushModeType flushMode = query.getFlushMode();
-		query.setFlushMode(FlushModeType.COMMIT);
+		query.setFlushMode(COMMIT);
 		for (final Hint hint : hints) {
 			query.setHint(hint.key(), hint.value());			
 		}
@@ -88,9 +94,12 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 
 		if(!isValid){
             context.disableDefaultConstraintViolation();
-			context.buildConstraintViolationWithTemplate("{br.eti.clairton.uniquevalidator.Unique.message}")
-				.addPropertyNode(path)
-				.addConstraintViolation();				
+            final String key = "{br.eti.clairton.uniquevalidator.Unique.message}";
+			for (final String path : paths) {				
+				context.buildConstraintViolationWithTemplate(key)
+					.addPropertyNode(path)
+					.addConstraintViolation();				
+			}
 		}
 		return isValid;
 	}

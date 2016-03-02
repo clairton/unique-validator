@@ -26,6 +26,7 @@ public class UniqueValidatorTest {
 	private @Inject Validator validator;
 	private @Inject EntityManager manager;
 	private Model model;
+	private Model2 model2;
 
 	@Before
 	public void init() throws Exception {
@@ -33,9 +34,12 @@ public class UniqueValidatorTest {
 		final TransactionManager tm = (TransactionManager) context.lookup("java:/jboss/TransactionManager");
 		tm.begin();
 		final Connection connection = manager.unwrap(Connection.class);
-		final String sql = "DELETE FROM model;";
+		final String sql = "DELETE FROM model; DELETE FROM model2;";
 		connection.createStatement().execute(sql);
 		model = new Model(protocol);
+		manager.persist(model);
+		model2 = new Model2(protocol);
+		manager.persist(model2);
 		manager.persist(model);
 		manager.flush();
 		manager.clear();
@@ -77,5 +81,18 @@ public class UniqueValidatorTest {
 	@Test
 	public void testIsValidWhenUpdate() {
 		assertTrue(validator.validate(model).isEmpty());
+	}
+
+	@Test
+	public void testTwoColumnsTheSameIsInvalid() {
+		final Model2 model2 = new Model2(protocol);
+		assertFalse(validator.validate(model2).isEmpty());
+	}
+
+	@Test
+	public void testTwoColumnsWhenIsValid() {
+		final Model2 model2 = new Model2(protocol);
+		model2.deactive();
+		assertTrue(validator.validate(model2).isEmpty());
 	}
 }

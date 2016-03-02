@@ -48,7 +48,7 @@ public @interface Unique {
 	 * 
 	 * @return String
 	 */
-	String path();
+	String[] path();
 
 	/**
 	 * Hints to apply.

@@ -6,6 +6,7 @@
 	<persistence-unit name="default" transaction-type="JTA">
 		<jta-data-source>jdbc/MyDS2</jta-data-source>
 		<class>br.eti.clairton.uniquevalidator.Model</class>
+		<class>br.eti.clairton.uniquevalidator.Model2</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 		<properties>
 			<!-- EclipseLink properties -->
