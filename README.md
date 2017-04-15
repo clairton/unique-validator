@@ -1,5 +1,4 @@
-# unique-validator[![Build Status](https://drone.io/github.com/clairton/unique-validator/status.png)](https://drone.io/github.com/clairton/unique-validator/latest)
-
+# unique-validator [![Build Status](https://travis-ci.org/clairton/unique-validator.svg?branch=master)](https://travis-ci.org/clairton/unique-validator)
 Bean Validation for unique value in database;
 
 ```java

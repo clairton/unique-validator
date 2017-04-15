@@ -40,7 +40,6 @@ public class UniqueValidator implements ConstraintValidator<Unique, Object> {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			@SuppressWarnings("unchecked")
 			public Class annotationType() {
 				return annotation.qualifier();
 			}
